@@ -227,7 +227,7 @@ class Krita统计插件(DockWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(DOCKER_NAME)
+        self.setWindowTitle(self._tr('Krita统计插件', 'Krita Statistics'))
         self.records = []
         self.year_groups = {}
         self.month_groups = {}
@@ -241,6 +241,8 @@ class Krita统计插件(DockWidget):
         self._current_search = ''
         self._all_records = []
         self._cache = {}
+        locale = Krita.instance().readSetting('', 'locale', '')
+        self._lang = 'zh' if locale and locale.startswith('zh') else 'en'
         self._load_settings()
         self._cache_init()
         self._build_ui()
@@ -248,6 +250,9 @@ class Krita统计插件(DockWidget):
 
     def canvasChanged(self, canvas):
         pass
+
+    def _tr(self, zh, en):
+        return zh if self._lang == 'zh' else en
 
     def _get_default_scan_path(self):
         return QStandardPaths.writableLocation(
@@ -262,7 +267,7 @@ class Krita统计插件(DockWidget):
 
     def _browse_directory(self):
         dir_path = QFileDialog.getExistingDirectory(
-            self, "选择 .kra 文件目录", self.scan_path)
+            self, self._tr("选择 .kra 文件目录", "Select .kra folder"), self.scan_path)
         if dir_path:
             self.scan_path = dir_path
             self._update_path_display()
@@ -582,20 +587,20 @@ class Krita统计插件(DockWidget):
 
         self.sort_combo = QComboBox()
         self.sort_combo.addItems([
-            '创建时间 ↓', '创建时间 ↑',
-            '修改时间 ↓', '修改时间 ↑',
+            self._tr('创建时间 ↓', 'Created ↓'), self._tr('创建时间 ↑', 'Created ↑'),
+            self._tr('修改时间 ↓', 'Modified ↓'), self._tr('修改时间 ↑', 'Modified ↑'),
         ])
         self.sort_combo.setCurrentIndex(self._saved_sort_index)
-        browse_btn = QPushButton('📁 浏览')
+        browse_btn = QPushButton(self._tr('\U0001F4C1 浏览', '\U0001F4C1 Browse'))
         browse_btn.clicked.connect(self._browse_directory)
         self.path_label = QLabel('')
         self.path_label.setStyleSheet("font-size: 10px; color: #ccc; min-width: 0;")
-        refresh_btn = QPushButton('刷新')
+        refresh_btn = QPushButton(self._tr('刷新', 'Refresh'))
         refresh_btn.clicked.connect(self.refresh_data)
 
         row1 = QHBoxLayout()
         row1.setSpacing(4)
-        row1.addWidget(QLabel('排序:'))
+        row1.addWidget(QLabel(self._tr('排序:', 'Sort:')))
         row1.addWidget(self.sort_combo)
         row1.addWidget(browse_btn)
         row1.addStretch()
@@ -610,7 +615,7 @@ class Krita统计插件(DockWidget):
         top_container.addLayout(row2)
 
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("搜索文件名...")
+        self.search_input.setPlaceholderText(self._tr('搜索文件名...', 'Search filename...'))
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._on_search_changed)
 
@@ -631,12 +636,12 @@ class Krita统计插件(DockWidget):
         bottom_container = QVBoxLayout()
         bottom_container.setSpacing(2)
 
-        self.stats_total_count = QLabel('文件: 0')
-        self.stats_total_time = QLabel('总耗时: 0s')
-        self.stats_month = QLabel('本月: 0s')
-        self.stats_year = QLabel('本年: 0s')
-        self.stats_earliest = QLabel('最早: -')
-        self.stats_latest = QLabel('最晚: -')
+        self.stats_total_count = QLabel(self._tr('文件: 0', 'Files: 0'))
+        self.stats_total_time = QLabel(self._tr('总耗时: 0s', 'Total: 0s'))
+        self.stats_month = QLabel(self._tr('本月: 0s', 'Month: 0s'))
+        self.stats_year = QLabel(self._tr('本年: 0s', 'Year: 0s'))
+        self.stats_earliest = QLabel(self._tr('最早: -', 'Earliest: -'))
+        self.stats_latest = QLabel(self._tr('最晚: -', 'Latest: -'))
 
         label_style = "font-size: 13px; color: #ddd;"
         for w in [self.stats_total_count, self.stats_total_time,
@@ -651,9 +656,9 @@ class Krita统计插件(DockWidget):
             row1.addWidget(w)
         row1.addStretch()
 
-        chart_btn = QPushButton('\U0001F4CA 图表')
+        chart_btn = QPushButton(self._tr('\U0001F4CA 图表', '\U0001F4CA Chart'))
         chart_btn.clicked.connect(self._show_chart_dialog)
-        export_btn = QPushButton('\U0001F4E4 导出')
+        export_btn = QPushButton(self._tr('\U0001F4E4 导出', '\U0001F4E4 Export'))
         export_btn.clicked.connect(self._export_html_report)
 
         row2 = QHBoxLayout()
@@ -665,7 +670,7 @@ class Krita统计插件(DockWidget):
         row3 = QHBoxLayout()
         row3.addWidget(chart_btn)
         row3.addStretch()
-        about_btn = QPushButton('\u2139\uFE0F \u5173\u4E8E')
+        about_btn = QPushButton(self._tr('\u2139\uFE0F 关于', '\u2139\uFE0F About'))
         about_btn.clicked.connect(self._show_about_dialog)
         row3.addWidget(about_btn)
         row3.addStretch()
@@ -705,7 +710,7 @@ class Krita统计插件(DockWidget):
             filtered = list(self._all_records)
 
         if not filtered:
-            self._show_empty_state('未找到匹配的文件')
+            self._show_empty_state(self._tr('未找到匹配的文件', 'No matching files'))
             return
 
         idx = self.sort_combo.currentIndex()
@@ -725,9 +730,11 @@ class Krita统计插件(DockWidget):
         self.stats = stats
         self.render_album(year_groups, month_groups, day_groups, stats)
 
-    def _show_empty_state(self, message='未找到 .kra 文件'):
+    def _show_empty_state(self, message=None):
+        if message is None:
+            message = self._tr('未找到 .kra 文件', 'No .kra files found')
         self._clear_layout(self.album_layout)
-        label = QLabel(f"\U0001F4C2  {message}\n点击 浏览 选择其他目录")
+        label = QLabel(f"\U0001F4C2  {message}\n{self._tr('点击 浏览 选择其他目录', 'Click Browse to choose another folder')}")
         label.setAlignment(Qt.AlignCenter)
         label.setStyleSheet("font-size: 14px; color: #aaa; padding: 40px;")
         self.album_layout.addWidget(label)
@@ -807,7 +814,7 @@ class Krita统计插件(DockWidget):
                 year_records = year_groups[year_key]
                 year_total = sum(r['editing_time'] for r in year_records)
                 year_btn = self._make_collapsible_header(
-                    f"\U0001F4C5 {year_key}  年总耗时: {self.format_time(year_total)}",
+                    f"\U0001F4C5 {year_key}  {self._tr('年总耗时', 'Year total')}: {self.format_time(year_total)}",
                     year_key, is_year=True)
                 year_btn.setChecked(year_key not in self._collapsed_years)
                 self.album_layout.addWidget(year_btn)
@@ -825,7 +832,7 @@ class Krita统计插件(DockWidget):
                     month_records = month_groups[month_key]
                     month_total = sum(r['editing_time'] for r in month_records)
                     month_btn = self._make_collapsible_header(
-                        f"\U0001F4C1 {month_key}  月总耗时: {self.format_time(month_total)}",
+                        f"\U0001F4C1 {month_key}  {self._tr('月总耗时', 'Month total')}: {self.format_time(month_total)}",
                         month_key, is_year=False)
                     month_btn.setChecked(month_key not in self._collapsed_months)
                     year_container_layout.addWidget(month_btn)
@@ -843,7 +850,7 @@ class Krita统计插件(DockWidget):
                         day_records = day_groups[day_key]
                         day_total = sum(r['editing_time'] for r in day_records)
                         day_label = QLabel(
-                            f"\U0001F4C4 {day_key}  日总耗时: {self.format_time(day_total)}")
+                            f"\U0001F4C4 {day_key}  {self._tr('日总耗时', 'Day total')}: {self.format_time(day_total)}")
                         day_label.setStyleSheet(
                             "font-size: 13px; font-weight: bold; "
                             "color: #ccc; "
@@ -949,11 +956,11 @@ class Krita统计插件(DockWidget):
         mtime_str = (record['modified_time'].strftime('%Y-%m-%d %H:%M')
                      if record['modified_time'] else "")
 
-        ctime_label = QLabel(f"创建: {ctime_str}")
+        ctime_label = QLabel(f"{self._tr('创建', 'Created')}: {ctime_str}")
         ctime_label.setAlignment(Qt.AlignCenter)
         ctime_label.setStyleSheet(
             "font-size: 11px; color: #aaa; border: none;")
-        mtime_label = QLabel(f"修改: {mtime_str}")
+        mtime_label = QLabel(f"{self._tr('修改', 'Modified')}: {mtime_str}")
         mtime_label.setAlignment(Qt.AlignCenter)
         mtime_label.setStyleSheet(
             "font-size: 11px; color: #aaa; border: none;")
@@ -969,7 +976,7 @@ class Krita统计插件(DockWidget):
 
     def _show_document_info(self, record):
         dialog = QDialog(self)
-        dialog.setWindowTitle(f"图像信息 - {record['name']}")
+        dialog.setWindowTitle(f"{self._tr('图像信息', 'Image Info')} - {record['name']}")
         dialog.setMinimumWidth(420)
         layout = QVBoxLayout(dialog)
         layout.setSpacing(8)
@@ -987,20 +994,20 @@ class Krita统计插件(DockWidget):
         grid.setHorizontalSpacing(12)
 
         info = [
-            ('文件名', record['name']),
-            ('路径', record['path']),
-            ('编辑时间', self.format_time(record['editing_time'])),
-            ('编辑次数', str(record['editing_cycles'])),
-            ('创建时间', record['created_time'].strftime('%Y-%m-%d %H:%M:%S')
+            (self._tr('文件名', 'File'), record['name']),
+            (self._tr('路径', 'Path'), record['path']),
+            (self._tr('编辑时间', 'Edit time'), self.format_time(record['editing_time'])),
+            (self._tr('编辑次数', 'Edit cycles'), str(record['editing_cycles'])),
+            (self._tr('创建时间', 'Created'), record['created_time'].strftime('%Y-%m-%d %H:%M:%S')
              if record['created_time'] else '-'),
-            ('修改时间', record['modified_time'].strftime('%Y-%m-%d %H:%M:%S')
+            (self._tr('修改时间', 'Modified'), record['modified_time'].strftime('%Y-%m-%d %H:%M:%S')
              if record['modified_time'] else '-'),
-            ('画布尺寸', f"{record['canvas_width']} x {record['canvas_height']} px"
+            (self._tr('画布尺寸', 'Canvas'), f"{record['canvas_width']} x {record['canvas_height']} px"
              if record['canvas_width'] > 0 else '-'),
-            ('标题', record['title'] or '-'),
-            ('创建者', record['creator'] or '-'),
-            ('图像作者', record['author_name'] or '-'),
-            ('作者邮箱', record['author_email'] or '-'),
+            (self._tr('标题', 'Title'), record['title'] or '-'),
+            (self._tr('创建者', 'Creator'), record['creator'] or '-'),
+            (self._tr('图像作者', 'Author'), record['author_name'] or '-'),
+            (self._tr('作者邮箱', 'Email'), record['author_email'] or '-'),
         ]
 
         row = 0
@@ -1015,7 +1022,7 @@ class Krita统计插件(DockWidget):
             grid.addWidget(val, row, 1)
             row += 1
 
-        sep = QLabel('<b>─ 作者联系方式 ─</b>')
+        sep = QLabel(f'<b>\u2500 {self._tr("作者联系方式", "Author Contacts")} \u2500</b>')
         sep.setStyleSheet("font-size: 12px; color: #aaa; padding: 4px 0;")
         grid.addWidget(sep, row, 0, 1, 2)
         row += 1
@@ -1070,7 +1077,7 @@ class Krita统计插件(DockWidget):
         self._thread = None
         self._worker = None
 
-        self.stats_total_count.setText("扫描中...")
+        self.stats_total_count.setText(self._tr("扫描中...", "Scanning..."))
 
         print(f"[Krita统计] 扫描路径: {self.scan_path}")
 
@@ -1103,7 +1110,7 @@ class Krita统计插件(DockWidget):
             self._on_scan_finished([])
 
     def _on_scan_progress(self, current, total):
-        self.stats_total_count.setText(f"扫描中... {current}/{total}")
+        self.stats_total_count.setText(f"{self._tr('扫描中', 'Scanning')}... {current}/{total}")
 
     def _on_scan_finished(self, raw_records):
         records = list(self._cache_records)
@@ -1166,19 +1173,20 @@ class Krita统计插件(DockWidget):
         self._thread = None
 
     def update_stats(self, stats):
-        self.stats_total_count.setText(f"文件: {stats['total_count']}")
+        self.stats_total_count.setText(
+            f"{self._tr('文件', 'Files')}: {stats['total_count']}")
         self.stats_total_time.setText(
-            f"总耗时: {self.format_time(stats['total_time'])}")
+            f"{self._tr('总耗时', 'Total')}: {self.format_time(stats['total_time'])}")
         self.stats_earliest.setText(
-            f"最早: {stats['earliest_created'].strftime('%Y-%m-%d')}"
-            if stats['earliest_created'] else "最早: -")
+            f"{self._tr('最早', 'Earliest')}: {stats['earliest_created'].strftime('%Y-%m-%d')}"
+            if stats['earliest_created'] else f"{self._tr('最早', 'Earliest')}: -")
         self.stats_latest.setText(
-            f"最晚: {stats['latest_modified'].strftime('%Y-%m-%d')}"
-            if stats['latest_modified'] else "最晚: -")
+            f"{self._tr('最晚', 'Latest')}: {stats['latest_modified'].strftime('%Y-%m-%d')}"
+            if stats['latest_modified'] else f"{self._tr('最晚', 'Latest')}: -")
         self.stats_month.setText(
-            f"本月: {self.format_time(stats['month_time'])}")
+            f"{self._tr('本月', 'Month')}: {self.format_time(stats['month_time'])}")
         self.stats_year.setText(
-            f"本年: {self.format_time(stats['year_time'])}")
+            f"{self._tr('本年', 'Year')}: {self.format_time(stats['year_time'])}")
 
     def _get_krita_author_name(self):
         config_dir = QStandardPaths.writableLocation(
@@ -1417,7 +1425,7 @@ class Krita统计插件(DockWidget):
         if not self._all_records:
             return
         dialog = QDialog(self)
-        dialog.setWindowTitle('统计图表')
+        dialog.setWindowTitle(self._tr('统计图表', 'Statistics Chart'))
         dialog.resize(1800, 1000)
         layout = QVBoxLayout(dialog)
         layout.setSpacing(8)
@@ -1426,14 +1434,17 @@ class Krita统计插件(DockWidget):
         author_name = self._get_krita_author_name()
 
         top = QHBoxLayout()
-        top.addWidget(QLabel('时间范围:'))
+        top.addWidget(QLabel(self._tr('时间范围:', 'Range:')))
         combo = QComboBox()
-        combo.addItems(['最近7天', '最近30天', '最近12个月', '全部'])
+        combo.addItems([self._tr('最近7天', 'Last 7 days'), self._tr('最近30天', 'Last 30 days'),
+                        self._tr('最近12个月', 'Last 12 months'), self._tr('全部', 'All')])
         top.addWidget(combo)
         top.addSpacing(20)
-        top.addWidget(QLabel('图表样式:'))
+        top.addWidget(QLabel(self._tr('图表样式:', 'Style:')))
         style_combo = QComboBox()
-        style_combo.addItems(['\U0001F4CA 柱状图', '\U0001F4C8 折线图', '\U0001F4C8 曲线图'])
+        style_combo.addItems([self._tr('\U0001F4CA 柱状图', '\U0001F4CA Bar'),
+                              self._tr('\U0001F4C8 折线图', '\U0001F4C8 Line'),
+                              self._tr('\U0001F4C8 曲线图', '\U0001F4C8 Curve')])
         top.addWidget(style_combo)
         top.addStretch()
         layout.addLayout(top)
@@ -1460,8 +1471,8 @@ class Krita统计插件(DockWidget):
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        export_png = QPushButton('导出图表为PNG')
-        close_btn = QPushButton('关闭')
+        export_png = QPushButton(self._tr('导出图表为PNG', 'Export Chart as PNG'))
+        close_btn = QPushButton(self._tr('关闭', 'Close'))
         close_btn.clicked.connect(dialog.accept)
         btn_row.addWidget(export_png)
         btn_row.addWidget(close_btn)
@@ -1473,7 +1484,8 @@ class Krita统计插件(DockWidget):
             labels, values, total_time, count = self._chart_data_for_range(idx)
             chart.set_data(labels, values, st)
             self._chart_summary.setText(
-                f'总耗时: {self.format_time(total_time)}  |  作品: {count}')
+                f"{self._tr('总耗时', 'Total')}: {self.format_time(total_time)}  |  "
+                f"{self._tr('作品', 'Works')}: {count}")
             self._chart_data_cache = (labels, values)
 
         self._chart_data_cache = None
@@ -1485,11 +1497,12 @@ class Krita统计插件(DockWidget):
 
     def _save_chart_png(self, container):
         today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-        default_name = f'Krita统计图表{today_str}.png'
+        default_name = f'{self._tr("Krita统计图表", "KritaChart")}_{today_str}.png'
         saved_dir = Krita.instance().readSetting(SETTINGS_GROUP, 'exportPath', '')
         default_path = os.path.join(saved_dir, default_name) if saved_dir else default_name
         path, _ = QFileDialog.getSaveFileName(
-            self, '保存图表', default_path, 'PNG图片 (*.png)')
+            self, self._tr('保存图表', 'Save Chart'), default_path,
+            f'{self._tr("PNG图片", "PNG Image")} (*.png)')
         if not path:
             return
         Krita.instance().writeSetting(SETTINGS_GROUP, 'exportPath', os.path.dirname(path))
@@ -1498,17 +1511,17 @@ class Krita统计插件(DockWidget):
 
     def _show_about_dialog(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle('\u5173\u4E8E')
+        dialog.setWindowTitle(self._tr('关于', 'About'))
         dialog.resize(360, 230)
         layout = QVBoxLayout(dialog)
         layout.setSpacing(12)
 
-        title = QLabel('\u2764 Krita\u7EDF\u8BA1\u63D2\u4EF6')
+        title = QLabel(f'\u2764 {self._tr("Krita统计插件", "Krita Statistics Plugin")}')
         title.setStyleSheet('font-size: 18px; font-weight: bold; color: #4a9eff;')
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 
-        author = QLabel('\u63D2\u4EF6\u4F5C\u8005\uFF1A\u8336\u6E05\u58A8\u5202')
+        author = QLabel(f'{self._tr("插件作者", "Author")}\uFF1A\u8336\u6E05\u58A8\u5202')
         author.setAlignment(Qt.AlignCenter)
         author.setStyleSheet('font-size: 13px; color: #ccc;')
         layout.addWidget(author)
@@ -1531,7 +1544,7 @@ class Krita统计插件(DockWidget):
         btn_container.addStretch()
         layout.addLayout(btn_container)
 
-        sponsor = QLabel('\u8D5E\u52A9\uFF1A<a href="https://space.bilibili.com/388428308/charge" style="color:#fb7299;">B\u7AD9\u5145\u7535</a>')
+        sponsor = QLabel(f'{self._tr("赞助", "Sponsor")}\uFF1A<a href="https://space.bilibili.com/388428308/charge" style="color:#fb7299;">B\u7AD9\u5145\u7535</a>')
         sponsor.setOpenExternalLinks(True)
         sponsor.setAlignment(Qt.AlignCenter)
         sponsor.setStyleSheet('font-size: 12px; color: #999;')
@@ -1539,7 +1552,7 @@ class Krita统计插件(DockWidget):
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        close_btn = QPushButton('\u5173\u95ED')
+        close_btn = QPushButton(self._tr('关闭', 'Close'))
         close_btn.clicked.connect(dialog.accept)
         btn_row.addWidget(close_btn)
         layout.addLayout(btn_row)
@@ -1550,16 +1563,20 @@ class Krita统计插件(DockWidget):
         if not self._all_records:
             return
         today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-        default_name = f'Krita统计报告{today_str}.html'
+        default_name = f'{self._tr("Krita统计报告", "KritaReport")}_{today_str}.html'
         saved_dir = Krita.instance().readSetting(SETTINGS_GROUP, 'exportPath', '')
         default_path = os.path.join(saved_dir, default_name) if saved_dir else default_name
         path, _ = QFileDialog.getSaveFileName(
-            self, '保存报告', default_path, 'HTML文件 (*.html)')
+            self, self._tr('保存报告', 'Save Report'), default_path,
+            f'{self._tr("HTML文件", "HTML File")} (*.html)')
         if not path:
             return
         Krita.instance().writeSetting(SETTINGS_GROUP, 'exportPath', os.path.dirname(path))
 
-        chart_names = ['最近7天', '最近30天', '最近12个月', '全部']
+        chart_names = [self._tr('最近7天', 'Last 7 days'),
+                       self._tr('最近30天', 'Last 30 days'),
+                       self._tr('最近12个月', 'Last 12 months'),
+                       self._tr('全部', 'All')]
         chart_b64s = []
         for i in range(4):
             labels, values, _, _ = self._chart_data_for_range(i)
@@ -1602,6 +1619,22 @@ class Krita统计插件(DockWidget):
         contact_html = ' | '.join(contact_parts) if contact_parts else ''
         up_arrow = '\u2191'
         down_arrow = '\u2193'
+        tr_report_title = self._tr('Krita 绘画统计报告', 'Krita Painting Statistics Report')
+        tr_export_pdf = self._tr('导出为 PDF', 'Export as PDF')
+        tr_total_files = self._tr('文件总数', 'Total Files')
+        tr_total_time_label = self._tr('总编辑时间', 'Total Editing Time')
+        tr_author_contacts = self._tr('作者联系方式', 'Author Contacts')
+        tr_earliest = self._tr('最早作品', 'Earliest')
+        tr_latest = self._tr('最近作品', 'Latest')
+        tr_month = self._tr('本月', 'Month')
+        tr_year = self._tr('本年', 'Year')
+        tr_thumbnail = self._tr('缩略图', 'Preview')
+        tr_filename = self._tr('文件名', 'Filename')
+        tr_edit_time = self._tr('编辑时间', 'Edit Time')
+        tr_created = self._tr('创建时间', 'Created')
+        tr_modified = self._tr('修改时间', 'Modified')
+        tr_canvas = self._tr('画布大小', 'Canvas Size')
+        tr_generated = self._tr('由 Krita统计插件 生成', 'Generated by Krita Statistics Plugin')
 
         html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -1629,20 +1662,20 @@ tr:nth-child(even) {{ background: #f8f9fa; }}
 </style>
 </head>
 <body>
-<button class="btn-print" onclick="window.print()">导出为 PDF</button>
-<h1>Krita 绘画统计报告{f' - {author_name}' if author_name else ''}</h1>
+<button class="btn-print" onclick="window.print()">{tr_export_pdf}</button>
+<h1>{tr_report_title}{f' - {author_name}' if author_name else ''}</h1>
 <div class="summary">
-<p><strong>文件总数:</strong> {stats.get('total_count', 0)} | <strong>总编辑时间:</strong> {total_time}</p>
-<p><strong>作者联系方式:</strong></p>
+<p><strong>{tr_total_files}:</strong> {stats.get('total_count', 0)} | <strong>{tr_total_time_label}:</strong> {total_time}</p>
+<p><strong>{tr_author_contacts}:</strong></p>
 <p>{contact_html}</p>
-<p><strong>最早作品:</strong> {earliest} | <strong>最近作品:</strong> {latest}</p>
-<p><strong>本月:</strong> {self.format_time(stats.get('month_time', 0))} | <strong>本年:</strong> {self.format_time(stats.get('year_time', 0))}</p>
+<p><strong>{tr_earliest}:</strong> {earliest} | <strong>{tr_latest}:</strong> {latest}</p>
+<p><strong>{tr_month}:</strong> {self.format_time(stats.get('month_time', 0))} | <strong>{tr_year}:</strong> {self.format_time(stats.get('year_time', 0))}</p>
 </div>
 <div class="chart">
 {''.join(f'<h3>{chart_names[i]}</h3><img src="data:image/png;base64,{chart_b64s[i]}" alt="{chart_names[i]}">' for i in range(4))}
 </div>
 <table id="sort-table">
-<tr><th>缩略图</th><th onclick="sortTable(1)">文件名 <span class="arrow"></span></th><th onclick="sortTable(2)">编辑时间 <span class="arrow"></span></th><th onclick="sortTable(3)">创建时间 <span class="arrow"></span></th><th onclick="sortTable(4)">修改时间 <span class="arrow"></span></th><th onclick="sortTable(5)">画布大小 <span class="arrow"></span></th></tr>
+<tr><th>{tr_thumbnail}</th><th onclick="sortTable(1)">{tr_filename} <span class="arrow"></span></th><th onclick="sortTable(2)">{tr_edit_time} <span class="arrow"></span></th><th onclick="sortTable(3)">{tr_created} <span class="arrow"></span></th><th onclick="sortTable(4)">{tr_modified} <span class="arrow"></span></th><th onclick="sortTable(5)">{tr_canvas} <span class="arrow"></span></th></tr>
 {rows}
 </table>
 <script>
@@ -1670,7 +1703,7 @@ function sortTable(col) {{
   }});
 }}
 </script>
-<p style="text-align:center;color:#999;margin-top:32px;">由 Krita统计插件 生成 | {now_str}</p>
+<p style="text-align:center;color:#999;margin-top:32px;">{tr_generated} | {now_str}</p>
 <p style="text-align:center;color:#999;font-size:12px;">\u63D2\u4EF6\u4F5C\u8005\uFF1A\u8336\u6E05\u58A8\u5202 | \u4E3B\u9875\uFF1A<a href="https://space.bilibili.com/388428308" style="color:#fb7299;">\u54D4\u54E9\u54D4\u54E9</a> | \u8D5E\u52A9\uFF1A<a href="https://space.bilibili.com/388428308/charge" style="color:#fb7299;">B\u7AD9\u5145\u7535</a></p>
 </body>
 </html>'''
@@ -1682,7 +1715,7 @@ function sortTable(col) {{
             QDesktopServices.openUrl(QUrl.fromLocalFile(path))
         except Exception as e:
             from PyQt5.QtWidgets import QMessageBox
-            QMessageBox.warning(self, '导出失败', str(e))
+            QMessageBox.warning(self, self._tr('导出失败', 'Export Failed'), str(e))
 
 
 class AlbumScrollArea(QScrollArea):
