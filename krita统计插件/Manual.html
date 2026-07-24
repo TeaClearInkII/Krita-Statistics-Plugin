@@ -1,16 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-
 <html xmlns="http://www.w3.org/1999/xhtml">
-<!--BBD's Krita Script Starter, Feb 2018 -->
-<head><title>Krita统计插件</title>
+<head>
+<meta charset="utf-8"/>
+<title>Krita统计插件 - 使用手册</title>
+<style>
+body { font-family: "Microsoft YaHei", sans-serif; max-width: 700px; margin: 20px; line-height: 1.6; color: #333; }
+h2 { color: #2c3e50; border-bottom: 2px solid #4a9eff; padding-bottom: 6px; }
+h3 { color: #34495e; }
+code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+ul { padding-left: 20px; }
+</style>
 </head>
 <body>
-<h3>Krita统计插件</h3>
-Tell people about what your script does here.
-This is an html document so you can format it with html tags.
-<h3>Usage</h3>
-Tell people how to use your script here.
+<h2>Krita统计插件</h2>
+<p>以相册形式展示 .kra 文件的绘画统计信息。自动扫描文档目录下的 .kra 文件，解析编辑时间，按日期分组展示。</p>
 
+<h3>功能</h3>
+<ul>
+  <li>扫描文档目录下所有 .kra 文件</li>
+  <li>显示每张作品的缩略图、文件名、耗时、创建和修改时间</li>
+  <li>按天/月分组，显示每天/月总耗时</li>
+  <li>底部状态栏显示总数、总耗时、最早/最晚时间、本月/本年统计</li>
+  <li>支持按创建时间或修改时间排序</li>
+  <li>点击作品卡片查看 Krita 内置的文档信息</li>
+</ul>
+
+<h3>使用方法</h3>
+<ol>
+  <li>启用插件后，在 <b>设置 → 面板</b> 中找到 "Krita统计插件" 并勾选</li>
+  <li>插件面板将出现在 Krita 窗口右侧</li>
+  <li>面板启动后自动扫描文档目录下的 .kra 文件</li>
+  <li>使用顶部下拉菜单切换排序方式</li>
+  <li>点击"刷新"按钮重新扫描</li>
+  <li>点击任意作品卡片查看详细信息</li>
+</ol>
+
+<h3>数据说明</h3>
+<ul>
+  <li><b>编辑时间</b>：Krita 自动记录的绘画耗时，存储在 .kra 文件内部</li>
+  <li><b>创建/修改时间</b>：来自文件系统属性</li>
+  <li><b>缩略图</b>：提取自 .kra 文件内嵌的预览图</li>
+  <li>本工具只读统计，不会修改任何文件</li>
+</ul>
+
+<h3>注意事项</h3>
+<ul>
+  <li>首次扫描大量文件可能需要一些时间</li>
+  <li>仅支持 .kra 格式文件</li>
+  <li>旧版 Krita 保存的 .kra 可能缺少预览图</li>
+</ul>
 </body>
 </html>
