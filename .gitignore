@@ -17,3 +17,6 @@ Thumbs.db
 
 # Krita specific (user-specific, not to be committed)
 *.kra
+
+# Personal conversation log
+ds对话.txt
