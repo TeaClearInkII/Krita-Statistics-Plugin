@@ -1512,7 +1512,7 @@ class Krita统计插件(DockWidget):
     def _show_about_dialog(self):
         dialog = QDialog(self)
         dialog.setWindowTitle(self._tr('关于', 'About'))
-        dialog.resize(360, 230)
+        dialog.resize(360, 280)
         layout = QVBoxLayout(dialog)
         layout.setSpacing(12)
 
@@ -1549,6 +1549,17 @@ class Krita统计插件(DockWidget):
         sponsor.setAlignment(Qt.AlignCenter)
         sponsor.setStyleSheet('font-size: 12px; color: #999;')
         layout.addWidget(sponsor)
+
+        version = QLabel(f'v1.0')
+        version.setAlignment(Qt.AlignCenter)
+        version.setStyleSheet('font-size: 11px; color: #777;')
+        layout.addWidget(version)
+
+        github = QLabel(f'<a href="https://github.com/TeaClearInkII/Krita-Statistics-Plugin" style="color:#4a9eff;font-size:11px;">GitHub</a>')
+        github.setOpenExternalLinks(True)
+        github.setAlignment(Qt.AlignCenter)
+        github.setStyleSheet('font-size: 11px; color: #777;')
+        layout.addWidget(github)
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
