@@ -227,6 +227,8 @@ class Krita统计插件(DockWidget):
 
     def __init__(self):
         super().__init__()
+        locale = Krita.instance().readSetting('', 'locale', '')
+        self._lang = 'zh' if locale and locale.startswith('zh') else 'en'
         self.setWindowTitle(self._tr('Krita统计插件', 'Krita Statistics'))
         self.records = []
         self.year_groups = {}
@@ -241,8 +243,6 @@ class Krita统计插件(DockWidget):
         self._current_search = ''
         self._all_records = []
         self._cache = {}
-        locale = Krita.instance().readSetting('', 'locale', '')
-        self._lang = 'zh' if locale and locale.startswith('zh') else 'en'
         self._load_settings()
         self._cache_init()
         self._build_ui()
@@ -1550,7 +1550,7 @@ class Krita统计插件(DockWidget):
         sponsor.setStyleSheet('font-size: 12px; color: #999;')
         layout.addWidget(sponsor)
 
-        version = QLabel(f'v1.0')
+        version = QLabel(f'{self._tr("版本", "Version")}: v1.0 | {self._tr("发布时间", "Released")}: 2026-07-24')
         version.setAlignment(Qt.AlignCenter)
         version.setStyleSheet('font-size: 11px; color: #777;')
         layout.addWidget(version)
