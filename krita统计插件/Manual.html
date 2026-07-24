@@ -1,54 +1,197 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <title>Krita统计插件 - 使用手册</title>
 <style>
-body { font-family: "Microsoft YaHei", sans-serif; max-width: 700px; margin: 20px; line-height: 1.6; color: #333; }
+* { box-sizing: border-box; }
+body { font-family: "Microsoft YaHei", "Segoe UI", sans-serif; max-width: 780px; margin: 24px auto; padding: 0 16px; line-height: 1.8; color: #333; }
 h2 { color: #2c3e50; border-bottom: 2px solid #4a9eff; padding-bottom: 6px; }
-h3 { color: #34495e; }
+h3 { color: #34495e; margin-top: 24px; }
+h4 { color: #555; margin: 16px 0 8px; }
 code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
-ul { padding-left: 20px; }
+ul, ol { padding-left: 20px; }
+li { margin: 4px 0; }
+.lang-en { display: none; }
+.toolbar { text-align: right; margin-bottom: 12px; }
+.toolbar button { padding: 6px 18px; border: 1px solid #4a9eff; background: #fff; color: #4a9eff; cursor: pointer; font-size: 14px; border-radius: 4px; }
+.toolbar button.active { background: #4a9eff; color: #fff; }
+.toolbar button:first-child { border-radius: 4px 0 0 4px; }
+.toolbar button:last-child { border-radius: 0 4px 4px 0; }
 </style>
 </head>
 <body>
-<h2>Krita统计插件</h2>
-<p>以相册形式展示 .kra 文件的绘画统计信息。自动扫描文档目录下的 .kra 文件，解析编辑时间，按日期分组展示。</p>
 
-<h3>功能</h3>
-<ul>
-  <li>扫描文档目录下所有 .kra 文件</li>
-  <li>显示每张作品的缩略图、文件名、耗时、创建和修改时间</li>
-  <li>按天/月分组，显示每天/月总耗时</li>
-  <li>底部状态栏显示总数、总耗时、最早/最晚时间、本月/本年统计</li>
-  <li>支持按创建时间或修改时间排序</li>
-  <li>点击作品卡片查看 Krita 内置的文档信息</li>
-</ul>
+<div class="toolbar">
+  <button id="btn-zh" class="active" onclick="switchLang('zh')">中文</button>
+  <button id="btn-en" onclick="switchLang('en')">English</button>
+</div>
 
-<h3>使用方法</h3>
+<h2 data-zh="Krita统计插件" data-en="Krita Statistics Plugin">Krita统计插件</h2>
+<p data-zh="以相册形式展示 .kra 文件的绘画统计信息。自动扫描文档目录下的 .kra 文件，解析编辑时间和元数据，按年/月/日分组展示。"
+   data-en="Displays .kra file painting statistics in an album layout. Automatically scans the document directory, parses editing time and metadata, grouped by year/month/day."></p>
+
+<h3 data-zh="安装" data-en="Installation">安装</h3>
 <ol>
-  <li>启用插件后，在 <b>设置 → 面板</b> 中找到 "Krita统计插件" 并勾选</li>
-  <li>插件面板将出现在 Krita 窗口右侧</li>
-  <li>面板启动后自动扫描文档目录下的 .kra 文件</li>
-  <li>使用顶部下拉菜单切换排序方式</li>
-  <li>点击"刷新"按钮重新扫描</li>
-  <li>点击任意作品卡片查看详细信息</li>
+  <li><span data-zh="下载 ZIP 包并解压，得到" data-en="Extract the ZIP to get"></span> <code>krita统计插件.desktop</code> <span data-zh="和" data-en="and"></code> <code>krita统计插件/</code></li>
+  <li data-zh="将这两个文件/文件夹复制到 Krita 的 pykrita/ 目录："
+     data-en="Copy both into Krita's pykrita/ folder:">
+    <br/><b>Windows</b>：<code>%APPDATA%\krita\pykrita\</code>
+    <br/><b>Linux</b>：<code>~/.local/share/krita/pykrita/</code>
+    <br/><b>macOS</b>：<code>~/Library/Application Support/krita/pykrita/</code>
+  </li>
+  <li data-zh="启动 Krita → 设置 → 配置 Krita → Python 插件管理器"
+     data-en="Launch Krita → Settings → Configure Krita → Python Plugin Manager"></li>
+  <li><span data-zh="勾选" data-en="Check"></span> <b>Krita统计插件</b> → <span data-zh="应用 → 重启 Krita" data-en="Apply → Restart Krita"></span></li>
+  <li><span data-zh="在 设置 → 面板 中找到并启用" data-en="Go to Settings → Dockers → enable it"></span></li>
 </ol>
 
-<h3>数据说明</h3>
+<h3 data-zh="界面布局" data-en="Layout">界面布局</h3>
 <ul>
-  <li><b>编辑时间</b>：Krita 自动记录的绘画耗时，存储在 .kra 文件内部</li>
-  <li><b>创建/修改时间</b>：来自文件系统属性</li>
-  <li><b>缩略图</b>：提取自 .kra 文件内嵌的预览图</li>
-  <li>本工具只读统计，不会修改任何文件</li>
+  <li data-zh="<b>第一行</b>：排序下拉（创建时间↑↓/修改时间↑↓）+ 📁浏览 + 路径 + 刷新"
+     data-en="<b>Row 1</b>: Sort dropdown (creation/modification time asc/desc) + 📁 Browse + path + Refresh"></li>
+  <li data-zh="<b>第二行</b>：文件名搜索框（实时过滤）"
+     data-en="<b>Row 2</b>: Filename search (real-time filter)"></li>
+  <li data-zh="<b>中部滚动区</b>：年→月→日 三级分组，可折叠标题"
+     data-en="<b>Scroll area</b>: Year → Month → Day collapsible sections"></li>
+  <li data-zh="<b>底部第一行</b>：文件总数、总耗时、本月、本年"
+     data-en="<b>Bottom row 1</b>: File count, total time, this month, this year"></li>
+  <li data-zh="<b>底部第二行</b>：最早创建时间、最晚修改时间"
+     data-en="<b>Bottom row 2</b>: Earliest & latest dates"></li>
+  <li data-zh="<b>底部第三行</b>：📊 图表 | ℹ️ 关于 | 📤 导出"
+     data-en="<b>Bottom row 3</b>: 📊 Chart | ℹ️ About | 📤 Export"></li>
 </ul>
 
-<h3>注意事项</h3>
+<h3 data-zh="功能" data-en="Features">功能</h3>
+
+<h4 data-zh="作品卡片" data-en="Artwork Cards">作品卡片</h4>
 <ul>
-  <li>首次扫描大量文件可能需要一些时间</li>
-  <li>仅支持 .kra 格式文件</li>
-  <li>旧版 Krita 保存的 .kra 可能缺少预览图</li>
+  <li data-zh="显示缩略图（正方形裁切，gamma 校正）" data-en="Square thumbnail with gamma correction"></li>
+  <li data-zh="右上角编辑时间角标" data-en="Editing time badge at top-right"></li>
+  <li data-zh="文件名、创建时间、修改时间（居中显示）" data-en="File name, creation & modification time (centered)"></li>
+  <li data-zh="点击卡片打开 图像信息 对话框" data-en="Click to open Image Info dialog"></li>
 </ul>
+
+<h4 data-zh="图像信息对话框" data-en="Image Info Dialog">图像信息对话框</h4>
+<ul>
+  <li data-zh="缩略图、文件名、路径、编辑时间、编辑次数"
+     data-en="Thumbnail, file name, path, editing time, editing cycles"></li>
+  <li data-zh="创建时间、修改时间、画布尺寸" data-en="Creation time, modification time, canvas size"></li>
+  <li data-zh="标题、创建者、图像作者、作者邮箱" data-en="Title, creator, author, email"></li>
+  <li data-zh="<b>作者联系方式</b>：从 Krita 用户设置读取的完整联系方式（姓名、邮箱、电话、主页等，仅显示非空字段）"
+     data-en="<b>Author Contacts</b>: Full contact info from Krita settings (name, email, phone, homepage, etc.)"></li>
+</ul>
+
+<h4 data-zh="排序与分组" data-en="Sort &amp; Group">排序与分组</h4>
+<ul>
+  <li data-zh="4 种排序：创建时间 ↑↓、修改时间 ↑↓" data-en="4 sort modes: creation/modification ↑↓"></li>
+  <li data-zh="年→月→日 三级分组，标题可点击折叠" data-en="Collapsible year/month/day groups"></li>
+  <li data-zh="切换排序时保留当前搜索结果，不重新扫描" data-en="Preserves search filter when sorting; no re-scan"></li>
+</ul>
+
+<h4 data-zh="搜索" data-en="Search">搜索</h4>
+<ul>
+  <li data-zh="第二行搜索框，输入实时过滤文件名" data-en="Real-time filename search in the second row"></li>
+  <li data-zh="不修改原始数据，切换排序时保持过滤" data-en="Filter preserved across sort changes"></li>
+</ul>
+
+<h4 data-zh="浏览目录" data-en="Browse Directory">浏览目录</h4>
+<ul>
+  <li data-zh="默认扫描 Krita 文档目录" data-en="Defaults to Krita's document directory"></li>
+  <li data-zh="点击 📁 浏览 选择任意文件夹" data-en="Click 📁 to choose any folder"></li>
+  <li data-zh="路径自动保存，重启后恢复" data-en="Path is saved and restored after restart"></li>
+</ul>
+
+<h4 data-zh="📊 图表" data-en="📊 Chart">📊 图表</h4>
+<ul>
+  <li data-zh="点击底部「📊 图表」打开统计图表对话框"
+     data-en="Click 📊 Chart at the bottom to open the chart dialog"></li>
+  <li data-zh="4 种时间范围：最近7天（按日）、最近30天（按日）、最近12个月（按月）、全部（按年）"
+     data-en="4 ranges: 7 days, 30 days, 12 months, all time"></li>
+  <li data-zh="3 种图表样式：柱状图、折线图、曲线图" data-en="3 chart types: bar, line, curve"></li>
+  <li data-zh="底部显示作者昵称 + 日期、总耗时" data-en="Shows author name, date, and total time"></li>
+  <li data-zh="「导出图表为 PNG」保存图表截图" data-en="Export chart as PNG button"></li>
+</ul>
+
+<h4 data-zh="📤 导出 HTML 报告" data-en="📤 Export HTML Report">📤 导出 HTML 报告</h4>
+<ul>
+  <li data-zh="生成自包含 HTML 报告，在浏览器中打开"
+     data-en="Generates a self-contained HTML report opened in your browser"></li>
+  <li data-zh="包含统计摘要、4 个图表截图、全量作品表格"
+     data-en="Includes summary, 4 chart screenshots, and full artwork table"></li>
+  <li data-zh="表格支持单击排序（升/降切换）" data-en="Sortable table with click-to-toggle asc/desc"></li>
+  <li data-zh="每行包含作品缩略图" data-en="Each row includes a thumbnail"></li>
+  <li data-zh="页面内「导出为 PDF」按钮（调浏览器打印 → 另存为 PDF）"
+     data-en="Export to PDF button (opens browser print dialog)"></li>
+  <li><span data-zh="文件命名格式" data-en="File naming"></span>：Krita统计报告YYYY-MM-DD.html</li>
+</ul>
+
+<h4 data-zh="ℹ️ 关于" data-en="ℹ️ About">ℹ️ 关于</h4>
+<ul>
+  <li data-zh="显示插件版本和作者信息" data-en="Shows plugin version and author info"></li>
+  <li data-zh="点击「哔哩哔哩」按钮打开作者主页" data-en="Click Bilibili button to visit the author's page"></li>
+</ul>
+
+<h3 data-zh="配置持久化" data-en="Persistence">配置持久化</h3>
+<ul>
+  <li data-zh="扫描路径、排序方式、折叠状态自动保存" data-en="Scan path, sort mode, and collapse state are auto-saved"></li>
+  <li data-zh="导出路径（PNG/HTML）共用记忆" data-en="Export path is shared and remembered"></li>
+  <li data-zh="重启 Krita 后恢复上次状态" data-en="Restores previous state after restart"></li>
+</ul>
+
+<h3 data-zh="数据说明" data-en="Data Notes">数据说明</h3>
+<ul>
+  <li data-zh="<b>编辑时间</b>：Krita 自动记录的绘画耗时，存储在 .kra 文件的 documentinfo.xml 中"
+     data-en="<b>Editing time</b>: Auto-recorded by Krita in the .kra file's documentinfo.xml"></li>
+  <li data-zh="<b>编辑次数</b>：.kra 文件内的编辑循环计数"
+     data-en="<b>Editing cycles</b>: Count of edit cycles stored inside .kra"></li>
+  <li data-zh="<b>创建/修改时间</b>：来自文件系统属性"
+     data-en="<b>Creation/Modification time</b>: From file system attributes"></li>
+  <li data-zh="<b>缩略图</b>：提取自 .kra 内嵌的 preview.png 或 mergedimage.png"
+     data-en="<b>Thumbnail</b>: Extracted from preview.png or mergedimage.png inside .kra"></li>
+  <li data-zh="<b>缓存</b>：解析结果缓存到 ~/.krita_stats_cache/，二次加载不重复解压"
+     data-en="<b>Cache</b>: Results cached to ~/.krita_stats_cache/ for faster re-scan"></li>
+  <li data-zh="本工具只读统计，不会修改任何 .kra 文件"
+     data-en="This tool is read-only and does not modify any .kra files"></li>
+</ul>
+
+<h3 data-zh="注意事项" data-en="Notes">注意事项</h3>
+<ul>
+  <li data-zh="首次扫描大量文件可能需要一些时间（后台线程，不阻塞 UI）"
+     data-en="Initial scan of many files may take time (background thread, non-blocking)"></li>
+  <li data-zh="仅支持 .kra 格式文件" data-en="Only .kra files are supported"></li>
+  <li data-zh="旧版 Krita 保存的 .kra 可能缺少 preview.png，自动回退到 mergedimage.png"
+     data-en="Older .kra files may lack preview.png; falls back to mergedimage.png"></li>
+  <li data-zh="联系方式信息来自 Krita 用户设置（设置 → 配置 Krita → 作者信息）"
+     data-en="Contact info comes from Krita's user settings (Configure Krita → Author)"></li>
+</ul>
+
+<p style="margin-top:32px;color:#999;font-size:12px;">
+  <span data-zh="插件作者" data-en="Author"></span>：茶清墨刂 |
+  <span data-zh="主页" data-en="Homepage"></span>：<a href="https://space.bilibili.com/388428308" style="color:#fb7299;">哔哩哔哩</a> |
+  <span data-zh="赞助" data-en="Sponsor"></span>：<a href="https://space.bilibili.com/388428308/charge" style="color:#fb7299;">B站充电</a>
+</p>
+
+<script>
+function switchLang(lang) {
+  document.getElementById('btn-zh').className = lang === 'zh' ? 'active' : '';
+  document.getElementById('btn-en').className = lang === 'en' ? 'active' : '';
+  document.querySelectorAll('[data-zh]').forEach(function(el) {
+    if (el.tagName === 'SPAN' || el.tagName === 'LI' || el.tagName === 'P' || el.tagName === 'H2' || el.tagName === 'H3' || el.tagName === 'H4') {
+      if (lang === 'en') {
+        var en = el.getAttribute('data-en');
+        if (en) el.innerHTML = en;
+      } else {
+        var zh = el.getAttribute('data-zh');
+        if (zh) el.innerHTML = zh;
+      }
+    }
+  });
+  try { localStorage.setItem('manual_lang', lang); } catch(e) {}
+}
+var saved = localStorage.getItem('manual_lang');
+if (saved === 'en') { switchLang('en'); } else { switchLang('zh'); }
+</script>
+
 </body>
 </html>

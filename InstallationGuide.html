@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Krita Statistics Plugin - Installation Guide</title>
+<style>
+body { font-family: "Segoe UI", sans-serif; max-width: 720px; margin: 30px auto; padding: 0 20px; line-height: 1.8; color: #333; }
+h1 { color: #2c3e50; border-bottom: 2px solid #4a9eff; padding-bottom: 8px; }
+h2 { color: #34495e; margin-top: 28px; }
+code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+ol, ul { padding-left: 20px; }
+li { margin: 6px 0; }
+hr { border: none; border-top: 1px solid #eee; margin: 28px 0; }
+.footer { text-align: center; color: #999; font-size: 12px; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<h1>Krita Statistics Plugin — Installation Guide</h1>
+
+<h2>Installation Steps</h2>
+<ol>
+  <li><b>Extract the ZIP archive.</b></li>
+  <li>
+    <b>Copy into Krita's <code>pykrita/</code> folder:</b>
+    <ul>
+      <li><code>krita统计插件.desktop</code></li>
+      <li><code>krita统计插件/</code> (the whole folder)</li>
+    </ul>
+    <b>Windows</b>：<code>%APPDATA%\krita\pykrita\</code><br>
+    <b>Linux</b>：<code>~/.local/share/krita/pykrita/</code><br>
+    <b>macOS</b>：<code>~/Library/Application Support/krita/pykrita/</code>
+  </li>
+  <li><b>Launch Krita</b> → <b>Settings → Configure Krita → Python Plugin Manager</b> → check <b>Krita统计插件</b> → Apply → Restart.</li>
+  <li><b>Go to Settings → Dockers</b> → enable <b>Krita统计插件</b>.</li>
+</ol>
+
+<hr>
+
+<h2>Features</h2>
+<ul>
+  <li>Scan .kra files and display as an album gallery</li>
+  <li>Sort by creation / modification time (ascending / descending)</li>
+  <li>Collapsible year → month → day groups</li>
+  <li>Real-time filename search</li>
+  <li>Browse any folder for .kra files</li>
+  <li>Click card to view image info &amp; author contacts</li>
+  <li>Statistics chart dialog (7d / 30d / 12m / all, bar/line/curve)</li>
+  <li>Export HTML report with charts, thumbnails, and sortable table</li>
+  <li>Cache system for fast re-scan</li>
+  <li>Settings persist across restarts</li>
+</ul>
+
+<hr>
+
+<h2>File Structure</h2>
+<pre>
+Krita统计插件_v1.0.zip
+├── InstallationGuide.html       ← This guide (English)
+├── 使用方法.html                 ← Installation guide (Chinese)
+├── krita统计插件.desktop         ← Plugin registration
+└── krita统计插件/                ← Plugin folder
+    ├── __init__.py
+    ├── krita统计插件.py
+    └── Manual.html              ← Detailed manual (Chinese)
+</pre>
+
+<div class="footer">
+Author: 茶清墨刂 | <a href="https://space.bilibili.com/388428308" style="color:#fb7299;">Bilibili</a>
+</div>
+
+</body>
+</html>

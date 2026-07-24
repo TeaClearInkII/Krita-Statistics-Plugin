@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Krita统计插件 - 安装使用说明</title>
+<style>
+body { font-family: "Microsoft YaHei", "Segoe UI", sans-serif; max-width: 720px; margin: 30px auto; padding: 0 20px; line-height: 1.8; color: #333; }
+h1 { color: #2c3e50; border-bottom: 2px solid #4a9eff; padding-bottom: 8px; }
+h2 { color: #34495e; margin-top: 28px; }
+.lang-en { color: #888; font-size: 14px; margin-top: -8px; }
+code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+ol, ul { padding-left: 20px; }
+li { margin: 6px 0; }
+hr { border: none; border-top: 1px solid #eee; margin: 28px 0; }
+.footer { text-align: center; color: #999; font-size: 12px; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<h1>Krita统计插件 — 安装使用说明</h1>
+
+<h2>安装步骤</h2>
+<p class="lang-en">Installation Steps</p>
+<ol>
+  <li>
+    <b>解压 ZIP</b><br>
+    <span class="lang-en">Extract the ZIP archive.</span>
+  </li>
+  <li>
+    <b>复制到 pykrita 目录</b><br>
+    <span class="lang-en">Copy these two items into Krita's <code>pykrita/</code> folder:</span>
+    <ul>
+      <li><code>krita统计插件.desktop</code></li>
+      <li><code>krita统计插件/</code>（整个文件夹 / entire folder）</li>
+    </ul>
+    <b>Windows</b>：<code>%APPDATA%\krita\pykrita\</code><br>
+    <b>Linux</b>：<code>~/.local/share/krita/pykrita/</code><br>
+    <b>macOS</b>：<code>~/Library/Application Support/krita/pykrita/</code>
+  </li>
+  <li>
+    <b>启用插件</b><br>
+    <span class="lang-en">Launch Krita → <b>Settings → Configure Krita → Python Plugin Manager</b> → check <b>Krita统计插件</b> → Apply → Restart Krita.</span>
+  </li>
+  <li>
+    <b>打开面板</b><br>
+    <span class="lang-en">Go to <b>Settings → Dockers</b> → enable <b>Krita统计插件</b>.</span>
+  </li>
+</ol>
+
+<hr>
+
+<h2>使用方法</h2>
+<p class="lang-en">Usage</p>
+<ul>
+  <li><b>排序</b>：顶部下拉切换 创建/修改时间 升/降序</li>
+  <li><b>浏览</b>：点击 📁 选择扫描目录</li>
+  <li><b>搜索</b>：第二行输入框实时过滤文件名</li>
+  <li><b>折叠</b>：点击年/月标题展开或收起</li>
+  <li><b>详情</b>：点击卡片查看图像信息和作者联系方式</li>
+  <li><b>图表</b>：📊 打开统计图表对话框</li>
+  <li><b>导出</b>：📤 生成 HTML 报告（含图表、缩略图、可排序表格）</li>
+</ul>
+
+<hr>
+
+<h2>文件结构</h2>
+<p class="lang-en">File Structure</p>
+<pre>
+Krita统计插件_v1.0.zip
+├── <b>使用方法.html</b>          ← 本文件 / this guide
+├── <b>krita统计插件.desktop</b>  ← Plugin registration
+└── <b>krita统计插件/</b>         ← Plugin folder
+    ├── __init__.py
+    ├── krita统计插件.py
+    └── Manual.html            ← 详细手册 / detailed manual
+</pre>
+
+<div class="footer">
+插件作者：茶清墨刂 | 主页：<a href="https://space.bilibili.com/388428308" style="color:#fb7299;">哔哩哔哩</a>
+</div>
+
+</body>
+</html>

@@ -20,3 +20,6 @@ Thumbs.db
 
 # Personal conversation log
 ds对话.txt
+
+# Build artifacts
+*.zip

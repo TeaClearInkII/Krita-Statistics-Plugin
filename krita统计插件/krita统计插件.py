@@ -1499,7 +1499,7 @@ class Krita统计插件(DockWidget):
     def _show_about_dialog(self):
         dialog = QDialog(self)
         dialog.setWindowTitle('\u5173\u4E8E')
-        dialog.resize(360, 200)
+        dialog.resize(360, 230)
         layout = QVBoxLayout(dialog)
         layout.setSpacing(12)
 
@@ -1530,6 +1530,12 @@ class Krita统计插件(DockWidget):
         btn_container.addWidget(bilibili_btn)
         btn_container.addStretch()
         layout.addLayout(btn_container)
+
+        sponsor = QLabel('\u8D5E\u52A9\uFF1A<a href="https://space.bilibili.com/388428308/charge" style="color:#fb7299;">B\u7AD9\u5145\u7535</a>')
+        sponsor.setOpenExternalLinks(True)
+        sponsor.setAlignment(Qt.AlignCenter)
+        sponsor.setStyleSheet('font-size: 12px; color: #999;')
+        layout.addWidget(sponsor)
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
@@ -1665,7 +1671,7 @@ function sortTable(col) {{
 }}
 </script>
 <p style="text-align:center;color:#999;margin-top:32px;">由 Krita统计插件 生成 | {now_str}</p>
-<p style="text-align:center;color:#999;font-size:12px;">\u63D2\u4EF6\u4F5C\u8005\uFF1A\u8336\u6E05\u58A8\u5202 | \u4E3B\u9875\uFF1A<a href="https://space.bilibili.com/388428308" style="color:#fb7299;">\u54D4\u54E9\u54D4\u54E9</a></p>
+<p style="text-align:center;color:#999;font-size:12px;">\u63D2\u4EF6\u4F5C\u8005\uFF1A\u8336\u6E05\u58A8\u5202 | \u4E3B\u9875\uFF1A<a href="https://space.bilibili.com/388428308" style="color:#fb7299;">\u54D4\u54E9\u54D4\u54E9</a> | \u8D5E\u52A9\uFF1A<a href="https://space.bilibili.com/388428308/charge" style="color:#fb7299;">B\u7AD9\u5145\u7535</a></p>
 </body>
 </html>'''
 
