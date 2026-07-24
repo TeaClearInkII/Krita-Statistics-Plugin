@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=Krita/PythonPlugin
+X-KDE-Library=krita统计插件
+X-Krita-Manual=Manual.html
+Name=Krita统计插件
+Comment=统计图像信息，拥有相册布局，包含年月日统计。
