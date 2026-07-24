@@ -44,7 +44,7 @@ A Krita dock widget that displays .kra file painting statistics in an album layo
 
 ## Screenshots / 截图
 
-*(Add screenshots here)*
+![Screenshot](krita统计插件/截图.png)
 
 ---
 
@@ -109,12 +109,9 @@ Krita-Statistics-Plugin/
 ├── krita统计插件.desktop               # Plugin registration
 └── krita统计插件/                      # Plugin source
     ├── __init__.py
-    ├── krita统计插件.py                 # Main plugin code (~1840 lines)
+    ├── krita统计插件.py                 # Main plugin code
     ├── Manual.html                    # Bilingual manual (CN/EN)
-    ├── Manual.html.bak
-    ├── DevelopmentGuide.md
-    ├── DevelopmentManual.md
-    └── TechResearchAndPlan.md
+    └── 截图.png                        # Screenshot
 ```
 
 ---

@@ -21,5 +21,10 @@ Thumbs.db
 # Personal conversation log
 ds对话.txt
 
+# Development documentation (not needed for distribution)
+krita统计插件/DevelopmentGuide.md
+krita统计插件/DevelopmentManual.md
+krita统计插件/TechResearchAndPlan.md
+
 # Build artifacts
 *.zip
