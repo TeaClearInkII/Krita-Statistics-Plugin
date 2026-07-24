@@ -1,4 +1,4 @@
-#BBD's Krita Script Starter Feb 2018
+# Krita统计插件 - 停靠面板
 from krita import DockWidget, DockWidgetFactory, DockWidgetFactoryBase
 
 DOCKER_NAME = 'Krita统计插件'
