@@ -6,6 +6,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import os
 import datetime
+import struct
 
 DOCKER_NAME = 'Krita统计插件'
 DOCKER_ID = 'pykrita_krita统计插件'
@@ -21,6 +22,9 @@ class Krita统计插件(DockWidget):
         self.month_groups = {}
         self.day_groups = {}
         self.stats = {}
+        self._rendering = False
+        self._collapsed_years = set()
+        self._collapsed_months = set()
         self.scan_path = self._get_default_scan_path()
         self._build_ui()
         QTimer.singleShot(100, self.refresh_data)
@@ -47,6 +51,34 @@ class Krita统计插件(DockWidget):
             self._update_path_display()
             self.refresh_data()
 
+    @staticmethod
+    def _gamma_correct_pixmap(pixmap, gamma=2.2):
+        if pixmap.isNull():
+            return pixmap
+        img = pixmap.toImage()
+        if img.isNull():
+            return pixmap
+        img = img.convertToFormat(QImage.Format_ARGB32)
+        if img.isNull():
+            return pixmap
+        table = [int(255.0 * (i / 255.0) ** (1.0 / gamma) + 0.5)
+                 for i in range(256)]
+        w, h = img.width(), img.height()
+        for y in range(h):
+            ptr = img.scanLine(y)
+            for x in range(w):
+                b, g, r, a = struct.unpack('BBBB', ptr[x * 4:(x + 1) * 4])
+                ptr[x * 4] = table[b]
+                ptr[x * 4 + 1] = table[g]
+                ptr[x * 4 + 2] = table[r]
+        return QPixmap.fromImage(img)
+
+    def _extract_xml_text(self, root, path, ns=''):
+        elem = root.find(path)
+        if elem is not None and elem.text:
+            return elem.text.strip()
+        return ''
+
     def scan_kra_files(self, root_dir):
         kra_files = []
         for root, dirs, files in os.walk(root_dir):
@@ -60,9 +92,16 @@ class Krita统计插件(DockWidget):
             'path': filepath,
             'name': os.path.basename(filepath),
             'editing_time': 0,
+            'editing_cycles': 0,
             'created_time': None,
             'modified_time': None,
             'thumbnail': None,
+            'title': '',
+            'creator': '',
+            'author_name': '',
+            'author_email': '',
+            'canvas_width': 0,
+            'canvas_height': 0,
         }
         try:
             stat = os.stat(filepath)
@@ -75,29 +114,55 @@ class Krita统计插件(DockWidget):
 
         try:
             with zipfile.ZipFile(filepath, 'r') as zf:
-                if 'documentinfo.xml' in zf.namelist():
+                names = zf.namelist()
+
+                if 'documentinfo.xml' in names:
                     xml_data = zf.read('documentinfo.xml')
                     root = ET.fromstring(xml_data)
+
                     time_elem = root.find('.//editing-time')
                     if time_elem is not None and time_elem.text:
                         result['editing_time'] = int(time_elem.text)
 
+                    cycles_elem = root.find('.//editing-cycles')
+                    if cycles_elem is not None and cycles_elem.text:
+                        result['editing_cycles'] = int(cycles_elem.text)
+
+                    result['title'] = self._extract_xml_text(root, './/title')
+                    result['creator'] = self._extract_xml_text(
+                        root, './/initial-creator')
+                    result['author_name'] = self._extract_xml_text(
+                        root, './/full-name')
+                    result['author_email'] = self._extract_xml_text(
+                        root, './/email')
+
+                if 'maindoc.xml' in names:
+                    xml_data = zf.read('maindoc.xml')
+                    root = ET.fromstring(xml_data)
+                    img = root.find('.//IMAGE')
+                    if img is not None:
+                        w = img.get('width', '0')
+                        h = img.get('height', '0')
+                        result['canvas_width'] = int(w) if w.isdigit() else 0
+                        result['canvas_height'] = int(h) if h.isdigit() else 0
+
                 for thumb_name in ['preview.png', 'mergedimage.png']:
-                    if thumb_name in zf.namelist():
+                    if thumb_name in names:
                         img_data = zf.read(thumb_name)
                         pixmap = QPixmap()
                         pixmap.loadFromData(img_data)
-                        result['thumbnail'] = pixmap
+                        result['thumbnail'] = self._gamma_correct_pixmap(
+                            pixmap)
                         break
         except Exception as e:
             print(f"解析失败: {filepath} - {e}")
 
         return result
 
-    def process_data(self, records, sort_by='created'):
+    def process_data(self, records, sort_by='created', sort_order='desc'):
         key = 'created_time' if sort_by == 'created' else 'modified_time'
         records.sort(key=lambda r: r[key] or datetime.datetime.min,
-                     reverse=True)
+                     reverse=(sort_order == 'desc'))
 
         year_groups = {}
         month_groups = {}
@@ -166,7 +231,10 @@ class Krita统计插件(DockWidget):
 
         top_bar = QHBoxLayout()
         self.sort_combo = QComboBox()
-        self.sort_combo.addItems(['按创建时间', '按修改时间'])
+        self.sort_combo.addItems([
+            '创建时间 ↓', '创建时间 ↑',
+            '修改时间 ↓', '修改时间 ↑',
+        ])
         browse_btn = QPushButton('📁 浏览')
         browse_btn.clicked.connect(self._browse_directory)
         self.path_label = QLabel('')
@@ -176,8 +244,8 @@ class Krita统计插件(DockWidget):
         top_bar.addWidget(QLabel('排序:'))
         top_bar.addWidget(self.sort_combo)
         top_bar.addWidget(browse_btn)
-        top_bar.addStretch()
         top_bar.addWidget(self.path_label)
+        top_bar.addStretch()
         top_bar.addWidget(refresh_btn)
 
         self.scroll_area = AlbumScrollArea()
@@ -213,10 +281,63 @@ class Krita统计插件(DockWidget):
         self._update_path_display()
 
     def _on_album_resize(self):
+        if self._rendering:
+            return
         if self.records and self.stats:
-            self.render_album(self.year_groups, self.month_groups, self.day_groups, self.stats)
+            self.render_album(
+                self.year_groups, self.month_groups,
+                self.day_groups, self.stats)
+
+    def _make_collapsible_header(self, text, key, is_year=True):
+        btn = QToolButton()
+        btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn.setArrowType(Qt.DownArrow)
+        btn.setText(text)
+        btn.setCheckable(True)
+        btn.setChecked(True)
+        btn.setStyleSheet("""
+            QToolButton {
+                font-weight: bold; border: none; text-align: left;
+            }
+            QToolButton:hover { color: #4a9eff; }
+        """)
+        if is_year:
+            btn.setStyleSheet(btn.styleSheet() + """
+                QToolButton { font-size: 17px; padding: 8px 4px 4px 4px;
+                              color: #2c3e50; }
+            """)
+        else:
+            btn.setStyleSheet(btn.styleSheet() + """
+                QToolButton { font-size: 15px; padding: 4px 4px 2px 16px; }
+            """)
+        btn.toggled.connect(lambda checked, k=key, y=is_year:
+                            self._toggle_section(k, y, checked))
+        return btn
+
+    def _toggle_section(self, key, is_year, checked):
+        if is_year:
+            if checked:
+                self._collapsed_years.discard(key)
+            else:
+                self._collapsed_years.add(key)
+        else:
+            if checked:
+                self._collapsed_months.discard(key)
+            else:
+                self._collapsed_months.add(key)
+        self.render_album(self.year_groups, self.month_groups,
+                          self.day_groups, self.stats)
 
     def render_album(self, year_groups, month_groups, day_groups, stats):
+        if self._rendering:
+            return
+        self._rendering = True
+        try:
+            self._do_render(year_groups, month_groups, day_groups, stats)
+        finally:
+            self._rendering = False
+
+    def _do_render(self, year_groups, month_groups, day_groups, stats):
         self._clear_layout(self.album_layout)
 
         cols = self._calc_columns()
@@ -224,23 +345,36 @@ class Krita统计插件(DockWidget):
         for year_key in sorted(year_groups.keys(), reverse=True):
             year_records = year_groups[year_key]
             year_total = sum(r['editing_time'] for r in year_records)
-            year_label = QLabel(
-                f"📅 {year_key}  年总耗时: {self.format_time(year_total)}")
-            year_label.setStyleSheet(
-                "font-size: 17px; font-weight: bold; padding: 8px 4px 4px 4px;"
-                " color: #2c3e50;")
-            self.album_layout.addWidget(year_label)
+            year_btn = self._make_collapsible_header(
+                f"📅 {year_key}  年总耗时: {self.format_time(year_total)}",
+                year_key, is_year=True)
+            year_btn.setChecked(year_key not in self._collapsed_years)
+            self.album_layout.addWidget(year_btn)
+
+            year_expanded = year_key not in self._collapsed_years
+            year_container = QWidget()
+            year_container.setVisible(year_expanded)
+            year_container_layout = QVBoxLayout(year_container)
+            year_container_layout.setContentsMargins(0, 0, 0, 0)
+            year_container_layout.setSpacing(1)
 
             for month_key in sorted(month_groups.keys(), reverse=True):
                 if not month_key.startswith(year_key):
                     continue
                 month_records = month_groups[month_key]
                 month_total = sum(r['editing_time'] for r in month_records)
-                month_label = QLabel(
-                    f"  📁 {month_key}  月总耗时: {self.format_time(month_total)}")
-                month_label.setStyleSheet(
-                    "font-size: 15px; font-weight: bold; padding: 4px 4px 2px 16px;")
-                self.album_layout.addWidget(month_label)
+                month_btn = self._make_collapsible_header(
+                    f"  📁 {month_key}  月总耗时: {self.format_time(month_total)}",
+                    month_key, is_year=False)
+                month_btn.setChecked(month_key not in self._collapsed_months)
+                year_container_layout.addWidget(month_btn)
+
+                month_expanded = month_key not in self._collapsed_months
+                month_container = QWidget()
+                month_container.setVisible(month_expanded)
+                month_container_layout = QVBoxLayout(month_container)
+                month_container_layout.setContentsMargins(12, 0, 0, 0)
+                month_container_layout.setSpacing(1)
 
                 for day_key in sorted(day_groups.keys(), reverse=True):
                     if not day_key.startswith(month_key):
@@ -248,10 +382,11 @@ class Krita统计插件(DockWidget):
                     day_records = day_groups[day_key]
                     day_total = sum(r['editing_time'] for r in day_records)
                     day_label = QLabel(
-                        f"    📄 {day_key}  日总耗时: {self.format_time(day_total)}")
+                        f"📄 {day_key}  日总耗时: {self.format_time(day_total)}")
                     day_label.setStyleSheet(
-                        "font-size: 13px; font-weight: bold; padding: 2px 4px 2px 28px;")
-                    self.album_layout.addWidget(day_label)
+                        "font-size: 13px; font-weight: bold; "
+                        "padding: 2px 4px 2px 4px;")
+                    month_container_layout.addWidget(day_label)
 
                     if not day_records:
                         continue
@@ -260,7 +395,11 @@ class Krita统计插件(DockWidget):
                     for i, rec in enumerate(day_records):
                         card = self.create_card(rec)
                         grid.addWidget(card, i // cols, i % cols)
-                    self.album_layout.addLayout(grid)
+                    month_container_layout.addLayout(grid)
+
+                year_container_layout.addWidget(month_container)
+
+            self.album_layout.addWidget(year_container)
 
         self.album_layout.addStretch()
         self.update_stats(stats)
@@ -329,7 +468,8 @@ class Krita统计插件(DockWidget):
 
         name_label = QLabel(record['name'])
         name_label.setWordWrap(True)
-        name_label.setStyleSheet("font-size: 11px; color: #333; border: none;")
+        name_label.setStyleSheet(
+            "font-size: 11px; color: #333; border: none;")
 
         ctime_str = (record['created_time'].strftime('%Y-%m-%d %H:%M')
                      if record['created_time'] else "")
@@ -337,30 +477,78 @@ class Krita统计插件(DockWidget):
                      if record['modified_time'] else "")
 
         ctime_label = QLabel(f"创建: {ctime_str}")
-        ctime_label.setStyleSheet("font-size: 11px; color: #888; border: none;")
+        ctime_label.setStyleSheet(
+            "font-size: 11px; color: #888; border: none;")
         mtime_label = QLabel(f"修改: {mtime_str}")
-        mtime_label.setStyleSheet("font-size: 11px; color: #888; border: none;")
+        mtime_label.setStyleSheet(
+            "font-size: 11px; color: #888; border: none;")
 
         layout.addLayout(stack)
         layout.addWidget(name_label)
         layout.addWidget(ctime_label)
         layout.addWidget(mtime_label)
 
-        card.mousePressEvent = lambda e, p=record['path']: (
-            self.open_document_info(p))
+        card.mousePressEvent = lambda e, rec=record: (
+            self._show_document_info(rec))
 
         return card
 
-    def open_document_info(self, filepath):
-        try:
-            doc = Krita.instance().openDocument(filepath)
-            if doc:
-                action = Krita.instance().action('document_info')
-                if action:
-                    action.trigger()
-        except Exception as e:
-            QMessageBox.warning(
-                self, "打开失败", f"无法打开文档信息:\n{filepath}\n\n{e}")
+    def _show_document_info(self, record):
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"文档信息 - {record['name']}")
+        dialog.setMinimumWidth(380)
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(8)
+
+        if record['thumbnail'] and not record['thumbnail'].isNull():
+            thumb = record['thumbnail'].scaled(
+                300, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            thumb_label = QLabel()
+            thumb_label.setPixmap(thumb)
+            thumb_label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(thumb_label)
+
+        grid = QGridLayout()
+        grid.setVerticalSpacing(6)
+        grid.setHorizontalSpacing(12)
+
+        info = [
+            ('文件名', record['name']),
+            ('路径', record['path']),
+            ('编辑时间', self.format_time(record['editing_time'])),
+            ('编辑次数', str(record['editing_cycles'])),
+            ('创建时间', record['created_time'].strftime('%Y-%m-%d %H:%M:%S')
+             if record['created_time'] else '-'),
+            ('修改时间', record['modified_time'].strftime('%Y-%m-%d %H:%M:%S')
+             if record['modified_time'] else '-'),
+            ('画布尺寸', f"{record['canvas_width']} x {record['canvas_height']} px"
+             if record['canvas_width'] > 0 else '-'),
+            ('标题', record['title'] or '-'),
+            ('创建者', record['creator'] or '-'),
+            ('作者', record['author_name'] or '-'),
+            ('邮箱', record['author_email'] or '-'),
+        ]
+
+        for i, (label, value) in enumerate(info):
+            lbl = QLabel(f"<b>{label}:</b>")
+            lbl.setStyleSheet("font-size: 12px;")
+            val = QLabel(value)
+            val.setStyleSheet("font-size: 12px; color: #555;")
+            val.setWordWrap(True)
+            val.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            grid.addWidget(lbl, i, 0, Qt.AlignTop)
+            grid.addWidget(val, i, 1)
+
+        layout.addLayout(grid)
+
+        btn_box = QHBoxLayout()
+        close_btn = QPushButton("关闭")
+        close_btn.clicked.connect(dialog.accept)
+        btn_box.addStretch()
+        btn_box.addWidget(close_btn)
+        layout.addLayout(btn_box)
+
+        dialog.exec_()
 
     def refresh_data(self):
         self.stats_total_count.setText("扫描中...")
@@ -375,10 +563,16 @@ class Krita统计插件(DockWidget):
             rec = self.parse_kra_file(fp)
             records.append(rec)
 
-        sort_by = ('created' if self.sort_combo.currentIndex() == 0
-                   else 'modified')
+        idx = self.sort_combo.currentIndex()
+        sort_map = {
+            0: ('created', 'desc'),
+            1: ('created', 'asc'),
+            2: ('modified', 'desc'),
+            3: ('modified', 'asc'),
+        }
+        sort_by, sort_order = sort_map.get(idx, ('created', 'desc'))
         year_groups, month_groups, day_groups, stats = self.process_data(
-            records, sort_by)
+            records, sort_by, sort_order)
 
         self.records = records
         self.year_groups = year_groups
@@ -409,9 +603,15 @@ class AlbumScrollArea(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.resize_callback = None
+        self._debounce = QTimer()
+        self._debounce.setSingleShot(True)
+        self._debounce.timeout.connect(self._emit_resize)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self._debounce.start(100)
+
+    def _emit_resize(self):
         if self.resize_callback:
             self.resize_callback()
 
