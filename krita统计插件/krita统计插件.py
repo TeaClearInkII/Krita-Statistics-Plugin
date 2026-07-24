@@ -17,8 +17,9 @@ class Krita统计插件(DockWidget):
         super().__init__()
         self.setWindowTitle(DOCKER_NAME)
         self.records = []
-        self.day_groups = {}
+        self.year_groups = {}
         self.month_groups = {}
+        self.day_groups = {}
         self.stats = {}
         self.scan_path = self._get_default_scan_path()
         self._build_ui()
@@ -30,6 +31,21 @@ class Krita统计插件(DockWidget):
     def _get_default_scan_path(self):
         return QStandardPaths.writableLocation(
             QStandardPaths.DocumentsLocation)
+
+    def _update_path_display(self):
+        text = self.scan_path
+        if len(text) > 35:
+            text = "..." + text[-32:]
+        self.path_label.setText(text)
+        self.path_label.setToolTip(self.scan_path)
+
+    def _browse_directory(self):
+        dir_path = QFileDialog.getExistingDirectory(
+            self, "选择 .kra 文件目录", self.scan_path)
+        if dir_path:
+            self.scan_path = dir_path
+            self._update_path_display()
+            self.refresh_data()
 
     def scan_kra_files(self, root_dir):
         kra_files = []
@@ -83,25 +99,25 @@ class Krita统计插件(DockWidget):
         records.sort(key=lambda r: r[key] or datetime.datetime.min,
                      reverse=True)
 
+        year_groups = {}
+        month_groups = {}
         day_groups = {}
         for rec in records:
             dt = rec[key]
             if dt is None:
                 continue
-            day_key = dt.strftime('%Y-%m-%d')
-            if day_key not in day_groups:
-                day_groups[day_key] = []
-            day_groups[day_key].append(rec)
-
-        month_groups = {}
-        for rec in records:
-            dt = rec[key]
-            if dt is None:
-                continue
+            year_key = dt.strftime('%Y')
             month_key = dt.strftime('%Y-%m')
+            day_key = dt.strftime('%Y-%m-%d')
+            if year_key not in year_groups:
+                year_groups[year_key] = []
+            year_groups[year_key].append(rec)
             if month_key not in month_groups:
                 month_groups[month_key] = []
             month_groups[month_key].append(rec)
+            if day_key not in day_groups:
+                day_groups[day_key] = []
+            day_groups[day_key].append(rec)
 
         now = datetime.datetime.now()
         month_total = sum(
@@ -126,7 +142,7 @@ class Krita统计插件(DockWidget):
                 default=None),
         }
 
-        return day_groups, month_groups, stats
+        return year_groups, month_groups, day_groups, stats
 
     @staticmethod
     def format_time(seconds):
@@ -151,11 +167,17 @@ class Krita统计插件(DockWidget):
         top_bar = QHBoxLayout()
         self.sort_combo = QComboBox()
         self.sort_combo.addItems(['按创建时间', '按修改时间'])
+        browse_btn = QPushButton('📁 浏览')
+        browse_btn.clicked.connect(self._browse_directory)
+        self.path_label = QLabel('')
+        self.path_label.setStyleSheet("font-size: 10px; color: #888;")
         refresh_btn = QPushButton('刷新')
         refresh_btn.clicked.connect(self.refresh_data)
         top_bar.addWidget(QLabel('排序:'))
         top_bar.addWidget(self.sort_combo)
+        top_bar.addWidget(browse_btn)
         top_bar.addStretch()
+        top_bar.addWidget(self.path_label)
         top_bar.addWidget(refresh_btn)
 
         self.scroll_area = AlbumScrollArea()
@@ -179,7 +201,7 @@ class Krita统计插件(DockWidget):
         for w in [self.stats_total_count, self.stats_total_time,
                   self.stats_earliest, self.stats_latest,
                   self.stats_month, self.stats_year]:
-            w.setStyleSheet("font-size: 10px;")
+            w.setStyleSheet("font-size: 13px;")
             bottom_bar.addWidget(w)
 
         main_layout.addLayout(top_bar)
@@ -188,44 +210,57 @@ class Krita统计插件(DockWidget):
         self.setWidget(main_widget)
 
         self.sort_combo.currentIndexChanged.connect(self.refresh_data)
+        self._update_path_display()
 
     def _on_album_resize(self):
         if self.records and self.stats:
-            self.render_album(self.day_groups, self.month_groups, self.stats)
+            self.render_album(self.year_groups, self.month_groups, self.day_groups, self.stats)
 
-    def render_album(self, day_groups, month_groups, stats):
+    def render_album(self, year_groups, month_groups, day_groups, stats):
         self._clear_layout(self.album_layout)
 
         cols = self._calc_columns()
 
-        for month_key in sorted(month_groups.keys(), reverse=True):
-            month_records = month_groups[month_key]
-            month_total = sum(r['editing_time'] for r in month_records)
-            month_label = QLabel(
-                f"📁 {month_key}  月总耗时: {self.format_time(month_total)}")
-            month_label.setStyleSheet(
-                "font-size: 15px; font-weight: bold; padding: 6px 4px 2px 4px;")
-            self.album_layout.addWidget(month_label)
+        for year_key in sorted(year_groups.keys(), reverse=True):
+            year_records = year_groups[year_key]
+            year_total = sum(r['editing_time'] for r in year_records)
+            year_label = QLabel(
+                f"📅 {year_key}  年总耗时: {self.format_time(year_total)}")
+            year_label.setStyleSheet(
+                "font-size: 17px; font-weight: bold; padding: 8px 4px 4px 4px;"
+                " color: #2c3e50;")
+            self.album_layout.addWidget(year_label)
 
-            for day_key in sorted(day_groups.keys(), reverse=True):
-                if not day_key.startswith(month_key):
+            for month_key in sorted(month_groups.keys(), reverse=True):
+                if not month_key.startswith(year_key):
                     continue
-                day_records = day_groups[day_key]
-                day_total = sum(r['editing_time'] for r in day_records)
-                day_label = QLabel(
-                    f"  📅 {day_key}  日总耗时: {self.format_time(day_total)}")
-                day_label.setStyleSheet(
-                    "font-size: 13px; font-weight: bold; padding: 3px 4px;")
-                self.album_layout.addWidget(day_label)
+                month_records = month_groups[month_key]
+                month_total = sum(r['editing_time'] for r in month_records)
+                month_label = QLabel(
+                    f"  📁 {month_key}  月总耗时: {self.format_time(month_total)}")
+                month_label.setStyleSheet(
+                    "font-size: 15px; font-weight: bold; padding: 4px 4px 2px 16px;")
+                self.album_layout.addWidget(month_label)
 
-                if not day_records:
-                    continue
-                grid = QGridLayout()
-                grid.setSpacing(6)
-                for i, rec in enumerate(day_records):
-                    card = self.create_card(rec)
-                    grid.addWidget(card, i // cols, i % cols)
-                self.album_layout.addLayout(grid)
+                for day_key in sorted(day_groups.keys(), reverse=True):
+                    if not day_key.startswith(month_key):
+                        continue
+                    day_records = day_groups[day_key]
+                    day_total = sum(r['editing_time'] for r in day_records)
+                    day_label = QLabel(
+                        f"    📄 {day_key}  日总耗时: {self.format_time(day_total)}")
+                    day_label.setStyleSheet(
+                        "font-size: 13px; font-weight: bold; padding: 2px 4px 2px 28px;")
+                    self.album_layout.addWidget(day_label)
+
+                    if not day_records:
+                        continue
+                    grid = QGridLayout()
+                    grid.setSpacing(6)
+                    for i, rec in enumerate(day_records):
+                        card = self.create_card(rec)
+                        grid.addWidget(card, i // cols, i % cols)
+                    self.album_layout.addLayout(grid)
 
         self.album_layout.addStretch()
         self.update_stats(stats)
@@ -302,9 +337,9 @@ class Krita统计插件(DockWidget):
                      if record['modified_time'] else "")
 
         ctime_label = QLabel(f"创建: {ctime_str}")
-        ctime_label.setStyleSheet("font-size: 10px; color: #888; border: none;")
+        ctime_label.setStyleSheet("font-size: 11px; color: #888; border: none;")
         mtime_label = QLabel(f"修改: {mtime_str}")
-        mtime_label.setStyleSheet("font-size: 10px; color: #888; border: none;")
+        mtime_label.setStyleSheet("font-size: 11px; color: #888; border: none;")
 
         layout.addLayout(stack)
         layout.addWidget(name_label)
@@ -331,7 +366,10 @@ class Krita统计插件(DockWidget):
         self.stats_total_count.setText("扫描中...")
         QApplication.processEvents()
 
+        print(f"[Krita统计] 扫描路径: {self.scan_path}")
         kra_files = self.scan_kra_files(self.scan_path)
+        print(f"[Krita统计] 找到 .kra 文件: {len(kra_files)} 个")
+
         records = []
         for fp in kra_files:
             rec = self.parse_kra_file(fp)
@@ -339,14 +377,16 @@ class Krita统计插件(DockWidget):
 
         sort_by = ('created' if self.sort_combo.currentIndex() == 0
                    else 'modified')
-        day_groups, month_groups, stats = self.process_data(records, sort_by)
+        year_groups, month_groups, day_groups, stats = self.process_data(
+            records, sort_by)
 
         self.records = records
-        self.day_groups = day_groups
+        self.year_groups = year_groups
         self.month_groups = month_groups
+        self.day_groups = day_groups
         self.stats = stats
 
-        self.render_album(day_groups, month_groups, stats)
+        self.render_album(year_groups, month_groups, day_groups, stats)
 
     def update_stats(self, stats):
         self.stats_total_count.setText(f"文件: {stats['total_count']}")
