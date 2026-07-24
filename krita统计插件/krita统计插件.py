@@ -227,8 +227,20 @@ class Krita统计插件(DockWidget):
 
     def __init__(self):
         super().__init__()
-        locale = Krita.instance().readSetting('', 'locale', '')
-        self._lang = 'zh' if locale and locale.startswith('zh') else 'en'
+        ks = Krita.instance()
+        locale_val = ''
+        for g, k in [('', 'locale'), ('General', 'locale'), ('Krita', 'locale'),
+                      ('', 'Language'), ('General', 'Language')]:
+            locale_val = ks.readSetting(g, k, '')
+            if locale_val:
+                break
+        if not locale_val:
+            try:
+                import locale as pylocale
+                locale_val = pylocale.getdefaultlocale()[0] or ''
+            except Exception:
+                pass
+        self._lang = 'zh' if locale_val.startswith('zh') else 'en'
         self.setWindowTitle(self._tr('Krita统计插件', 'Krita Statistics'))
         self.records = []
         self.year_groups = {}
