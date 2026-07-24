@@ -2,7 +2,18 @@
 
 ## 1. 项目概述
 
-一个 Krita 停靠面板插件，以相册形式展示 .kra 文件的绘画统计信息。自动扫描指定目录下的 .kra 文件，解析 Krita 记录的编辑时间，按日期分组展示，并提供全局统计汇总。
+一个 Krita 停靠面板（DockWidget）插件，以相册形式展示 .kra 文件的绘画统计信息。
+自动扫描指定目录下的 .kra 文件，解析 Krita 内部记录的编辑时间，按日期分组展示，并提供全局统计汇总。
+
+### 1.1 用户原始需求
+
+> 开发一个 Krita 插件，具有界面显示统计信息（本身不做记录）。扫描 Krita 文件管理路径下的 .kra 文件内的时间信息，以创建时间/修改时间排序。显示每张 .kra 的缩略图，右上角显示耗时，下方显示名称、创建时间和修改时间。界面像相册一样按天分割，每天标题后有当天总耗时，每月标题后有当月总耗时。底部显示全部统计结果：.kra 数量、总耗时、最早创建时间、最晚修改时间、本月/本年/总统计。点击图像使用 Krita 自带的文档属性查看详细信息。
+
+### 1.2 设计目标
+
+- **只读统计**：插件只读取和展示，不修改 .kra 文件
+- **视觉直观**：相册式布局，一眼看清创作时间线
+- **与 Krita 集成**：复用 Krita 内置的文档信息对话框
 
 ## 2. 功能需求
 
@@ -34,23 +45,78 @@
 
 ## 3. 技术方案
 
-| 层级 | 技术选型 |
+### 3.1 技术选型总览
+
+| 层级 | 技术选型 | 选型理由 |
+|------|----------|----------|
+| 插件类型 | `DockWidget`（停靠面板） | 可停靠在 Krita 主窗口侧边，拥有独立 UI 空间，方便随时查看 |
+| GUI 框架 | PyQt5（Krita 内置） | Krita 的 Python API 基于 PyQt5，无需额外安装 |
+| 文件解析 | `zipfile` + `xml.etree.ElementTree` | Python 标准库，无外部依赖 |
+| 缩略图提取 | `zipfile` 读取 `preview.png` | .kra 压缩包内置预览图 |
+| 文件系统 | `os`, `glob` | Python 标准库，跨平台兼容 |
+
+### 3.2 为什么选择 DockWidget 而非 Extension
+
+```
+Extension:    无 UI 界面，后台运行，适合自动任务
+DockWidget:   有独立面板 UI，可停靠/浮动，适合交互式浏览
+→ 本项目需要相册浏览界面，选择 DockWidget
+```
+
+### 3.3 .kra 文件结构（ZIP 格式）
+
+.kra 文件本质上是标准 ZIP 压缩包，内部包含：
+
+```
+archive.kra
+├── documentinfo.xml      # 文档元信息（含编辑时间）
+├── maindoc.xml           # 文档主结构
+├── preview.png           # 预览缩略图（首选）
+├── mergedimage.png       # 合并后预览图（备选）
+├── layers/               # 图层数据
+│   ├── layer0.png
+│   └── ...
+├── annotations/          # 注释数据
+└── mimetype              # 文件类型标识
+```
+
+关键提取点：
+- **编辑时间**：`documentinfo.xml` → `<editing-time>` 标签（单位：秒）
+- **缩略图**：`preview.png`（优先）→ `mergedimage.png`（回退）
+- **文件时间**：操作系统文件属性 `os.stat()`
+
+### 3.4 交互机制（信号与槽）
+
+点击卡片 → 打开 Krita 自带文档信息对话框：
+
+```
+用户点击卡片
+  → card.mousePressEvent 触发
+    → Krita.instance().openDocument(filepath)   # 打开 .kra 文件
+      → Krita.instance().action('document_info').trigger()  # 弹出文档信息
+```
+
+Krita 内部维护一个 Action 系统，`document_info` 是内置动作，触发后会弹出自带的文档属性窗口。
+
+### 3.5 参考项目与灵感来源
+
+| 项目 | 可借鉴点 |
 |------|----------|
-| 插件类型 | `DockWidget`（停靠面板） |
-| GUI 框架 | PyQt5（Krita 内置） |
-| 文件解析 | `zipfile` + `xml.etree.ElementTree` |
-| 缩略图提取 | `zipfile` 读取 `preview.png` |
-| 文件系统 | `os`, `glob` |
+| [loentar 的统计脚本](https://krita-artists.org/t/script-for-calculating-the-total-drawing-time-for-a-directory/68277) | 解析 `documentinfo.xml` 提取编辑时间的核心逻辑 |
+| [Ramen5000 的预览插件](https://krita-artists.org/t/i-have-been-developing-a-new-plugin-for-krita-and-this-is-what-i-have-so-far/68371) | 目录扫描 + 缩略图预览 + 点击打开的 UI 交互模式 |
+| [Krita-PythonPluginDeveloperTools](https://github.com/EyeOdin/Krita-PythonPluginDeveloperTools) | 辅助调试工具，实时查看 Krita API 调用 |
 
 ## 4. 项目结构
 
 ```
-pykrita/krita统计插件/
-├── __init__.py                  # 插件入口，导入主类
-├── krita统计插件.py              # 主逻辑：DockWidget + UI + 数据处理
-├── Manual.html                  # Krita 插件管理器显示的手册
-├── DevelopmentGuide.md          # 本开发文档
-└── (krita统计插件.desktop 位于 pykrita/ 同级目录)
+pykrita/                        # Krita 的 pykrita 插件根目录
+├── krita统计插件.desktop         # 插件注册文件（类型: Krita/PythonPlugin）
+├── ds对话.txt                    # 需求分析与技术讨论原始记录
+└── krita统计插件/                # 插件代码包
+    ├── __init__.py              # 插件入口，导入主类
+    ├── krita统计插件.py           # 主逻辑：DockWidget + UI + 数据处理
+    ├── Manual.html              # Krita 插件管理器显示的手册
+    └── DevelopmentGuide.md      # 本开发文档
 ```
 
 ### .desktop 文件（`krita统计插件.desktop`）
